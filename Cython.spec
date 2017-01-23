@@ -1,6 +1,10 @@
 %global srcname Cython
 %global upname cython
 
+%if 0%{?fedora}
+%global with_python3 1
+%endif
+
 # https://github.com/cython/cython/issues/1548
 %bcond_with tests
 
@@ -48,6 +52,7 @@ BuildRequires:  python-jedi
 
 Python 2 version.
 
+%if 0%{?with_python3}
 %package -n python3-%{srcname}
 Summary:        %{summary}
 %{?python_provide:%python_provide python3-%{srcname}}
@@ -61,15 +66,19 @@ BuildRequires:  python3-jedi
 %description -n python3-%{srcname} %{_description}
 
 Python 3 version.
+%endif
 
 %prep
 %autosetup -n %{upname}-%{version} -p1
 
 %build
 %py2_build
+%if 0%{?with_python3}
 %py3_build
+%endif
 
 %install
+%if 0%{?with_python3}
 # Must do the python3 install first because the scripts in /usr/bin are
 # overwritten with every setup.py install (and we want the python2 version
 # to be the default for now).
@@ -78,6 +87,7 @@ for bin in cython cythonize cygdb; do
   mv %{buildroot}%{_bindir}/${bin} %{buildroot}%{_bindir}/${bin}3
 done
 rm -rf %{buildroot}%{python3_sitelib}/setuptools/tests
+%endif
 
 %py2_install
 rm -rf %{buildroot}%{python2_sitelib}/setuptools/tests
@@ -85,7 +95,9 @@ rm -rf %{buildroot}%{python2_sitelib}/setuptools/tests
 %if %{with tests}
 %check
 %{__python2} runtests.py -vv
+%if 0%{?with_python3}
 %{__python3} runtests.py -vv
+%endif
 %endif
 
 %files -n python2-%{srcname}
@@ -99,6 +111,7 @@ rm -rf %{buildroot}%{python2_sitelib}/setuptools/tests
 %{python2_sitearch}/pyximport/
 %{python2_sitearch}/%{upname}.py*
 
+%if 0%{?with_python3}
 %files -n python3-%{srcname}
 %license LICENSE.txt
 %doc *.txt Demos Doc Tools
@@ -110,6 +123,7 @@ rm -rf %{buildroot}%{python2_sitelib}/setuptools/tests
 %{python3_sitearch}/pyximport/
 %{python3_sitearch}/%{upname}.py
 %{python3_sitearch}/__pycache__/%{upname}.*
+%endif
 
 %changelog
 * Thu Dec 22 2016 Igor Gnatenko <i.gnatenko.brain@gmail.com> - 0.25.2-3
