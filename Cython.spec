@@ -1,28 +1,21 @@
 %global srcname Cython
 %global upname cython
 
-%if 0%{?fedora}
+%if 0%{?fedora} || 0%{?rhel} > 7
 %global with_python3 1
 %endif
 
-# https://github.com/cython/cython/issues/1548
+# https://github.com/cython/cython/issues/1548 # Fixed in 0.29.2
 %bcond_with tests
 
 Name:           Cython
-Version:        0.25.2
-Release:        4%{?dist}
+Version:        0.29.2
+Release:        1%{?dist}
 Summary:        A language for writing Python extension modules
 
 License:        Python
 URL:            http://www.cython.org
-Source:         https://github.com/cython/cython/archive/%{version}/%{srcname}-%{version}.tar.gz
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=1406533
-# https://github.com/cython/cython/pull/1560
-Patch0001:      0001-fix-typo-in-Compiler-Options.py.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=1406905
-# https://github.com/cython/cython/pull/483
-Patch0002:      0001-Check-sys.path-for-.pxi-files-too.patch
+Source:         https://github.com/cython/cython/archive/%{version}/%{upname}-%{version}.tar.gz
 
 BuildRequires:  gcc
 %if %{with tests}
@@ -35,20 +28,20 @@ for writing Python extension modules.
 
 %description %{_description}
 
-%package -n python-%{srcname}
+%package -n python2-%{srcname}
 Summary:        %{summary}
 %{?python_provide:%python_provide python-%{srcname}}
 Provides:       Cython = %{?epoch:%{epoch}:}%{version}-%{release}
 Obsoletes:      Cython < %{?epoch:%{epoch}:}%{version}-%{release}
 BuildRequires:  python2-devel
-BuildRequires:  python-setuptools
+BuildRequires:  python2-setuptools
 %if %{with tests}
-BuildRequires:  python-coverage
-BuildRequires:  python-numpy
-BuildRequires:  python-jedi
+BuildRequires:  python2-coverage
+BuildRequires:  python2-numpy
+BuildRequires:  python2-jedi
 %endif
 
-%description -n python-%{srcname} %{_description}
+%description -n python2-%{srcname} %{_description}
 
 Python 2 version.
 
@@ -69,15 +62,18 @@ Python 3 version.
 %endif
 
 %prep
+export RHEL_ALLOW_PYTHON2_FOR_BUILD=1
 %autosetup -n %{upname}-%{version} -p1
 
 %build
-CFLAGS="%{optflags}" %{__python} setup.py %{?py_setup_args} build --executable="%{__python2} -s"
+export RHEL_ALLOW_PYTHON2_FOR_BUILD=1
+CFLAGS="%{optflags}" %{__python2} setup.py %{?py_setup_args} build --executable="%{__python2} -s"
 %if 0%{?with_python3}
 %py3_build
 %endif
 
 %install
+export RHEL_ALLOW_PYTHON2_FOR_BUILD=1
 %if 0%{?with_python3}
 # Must do the python3 install first because the scripts in /usr/bin are
 # overwritten with every setup.py install (and we want the python2 version
@@ -89,18 +85,19 @@ done
 rm -rf %{buildroot}%{python3_sitelib}/setuptools/tests
 %endif
 
-CFLAGS="%{optflags}" %{__python} setup.py %{?py_setup_args} install -O1 --skip-build --root %{buildroot}
+CFLAGS="%{optflags}" %{__python2} setup.py %{?py_setup_args} install -O1 --skip-build --root %{buildroot}
 rm -rf %{buildroot}%{python2_sitelib}/setuptools/tests
 
 %if %{with tests}
 %check
+export RHEL_ALLOW_PYTHON2_FOR_BUILD=1
 %{__python2} runtests.py -vv
 %if 0%{?with_python3}
 %{__python3} runtests.py -vv
 %endif
 %endif
 
-%files -n python-%{srcname}
+%files -n python2-%{srcname}
 %license LICENSE.txt
 %doc *.txt Demos Doc Tools
 %{_bindir}/cython
@@ -126,6 +123,10 @@ rm -rf %{buildroot}%{python2_sitelib}/setuptools/tests
 %endif
 
 %changelog
+* Mon Dec 17 2018 Lon Hohberger <lon@redhat.com> - 0.29.2-0.1
+- Bump to 0.29.2
+- RHEL8-isms
+
 * Tue May 23 2017 Mike Burns <mburns@redhat.com> - 0.25.2-4
 - rebuild for ppc64le
 
